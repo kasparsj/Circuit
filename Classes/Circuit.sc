@@ -2,7 +2,6 @@ Circuit {
 	classvar <numInstances = 0;
 	classvar <sections;
 
-	var <>deviceID;
 	var <>server;
 	var <>syn0;
 	var <>syn1;
@@ -15,9 +14,6 @@ Circuit {
 	var <out;
 
 	var <midiOut;
-	var <midiOn;
-	var <midiOff;
-	var <midiCC;
 
 
 	*initClass {
@@ -33,16 +29,14 @@ Circuit {
 		);
 	}
 
-	*new { |deviceID, s=nil|
-		var instance = super.newCopyArgs(deviceID);
+	*new { |s=nil|
+		var instance = super.newCopyArgs(s ? Server.default);
 		numInstances = numInstances + 1;
 		instance.init(s ? Server.default);
 		^instance;
 	}
 
-	init { |s|
-		server = s;
-
+	init {
 		sections.keysValuesDo { |key, value|
 			this.perform((key ++ "_").asSymbol, CircuitSection.new(this, key, value[0].size, value[0], value[1]));
 		};
@@ -60,14 +54,6 @@ Circuit {
 		if (midiOut != nil, {
 			midiOut.free;
 			midiOut = nil;
-		});
-		if (midiOn != nil, {
-			midiOn.free;
-			midiOn = nil;
-		});
-		if (midiOff != nil, {
-			midiOff.free;
-			midiOff = nil;
 		});
 	}
 
@@ -103,104 +89,115 @@ Circuit {
 		midiOut = MIDIOut.newByName(deviceName, portName);
 	}
 
-	midiFunc {
-		midiOn = MIDIFunc.noteOn({ |vel, num, chan, src|
-			if (src == deviceID) {
-				this.prNoteOn(vel, num, chan);
-			};
-		});
-		midiOff = MIDIFunc.noteOff({ |vel, num, chan, src|
-			if (src == deviceID) {
-				this.prNoteOff(vel, num, chan);
-			};
-		});
-		midiCC = MIDIFunc.cc({ |value, num, chan, src|
-			if (src == deviceID) {
-				this.prCC(value, num, chan);
-			};
-		});
-	}
-
-	prNoteOn { |veloc = 64, note = 60, chan = 0|
-		veloc = veloc / 127.0;
+	prNoteInfo { |note = 60, chan = 0|
 		switch (chan,
 			0, {
-				syn0.midiNoteOn(veloc, note, true);
+				[\syn0];
 			},
 			1, {
-				syn1.midiNoteOn(veloc, note, true);
+				[\syn1];
 			},
 		);
 	}
 
-	prNoteOff { |veloc = 64, note = 60, chan = 0|
-		veloc = veloc / 127.0;
-		switch (chan,
+	prCCInfo { |num, chan|
+		^switch (chan,
 			0, {
-				syn0.midiNoteOff(veloc, note, false);
-			},
-			1, {
-				syn1.midiNoteOff(veloc, note, false);
-			},
-		);
-	}
-
-	prCC { |value, num, chan|
-		value = value / 127.0;
-		switch (chan,
-			0, {
-				syn0.midiCC(value, num);
+				if (num >= syn0.nums.first and: { num <= syn0.nums.last }) {
+					[\syn0, num-syn0.nums.first];
+				};
 			},
 
 			1, {
-				syn1.midiCC(value, num);
+				if (num >= syn1.nums.first and: { num <= syn1.nums.last }) {
+					[\syn1, num-syn1.nums.first];
+				};
 			},
 
 			9, {
 				if (num == 12, {
-					mix.midiCCIndex(value, 2);
+					[\mix, 2];
 				});
 				if (num >= 14 and: { num <= 21 }, {
-					drum0.midiCC(value, num);
+					[\drum0, num-14];
 				});
 				if (num == 23, {
-					mix.midiCCIndex(value, 3);
+					[\mix, 3];
 				});
 				if (num == 45, {
-					mix.midiCCIndex(value, 4);
+					[\mix, 4];
 				});
 				if (num >= 46 and: { num <= 53 }, {
-					drum1.midiCC(value, num);
+					[\drum1, num-46];
 				});
 				if (num == 53, {
-					mix.midiCCIndex(value, 5);
+					[\mix, 5];
 				});
 			},
 
 			15, {
 				if (num == 12, {
-					mix.midiCCIndex(value, 0);
+					[\mix, 0];
 				});
 				if (num == 14, {
-					mix.midiCCIndex(value, 1);
+					[\mix, 1];
 				});
 				if (num == 74, {
-					fltr.midiCCIndex(value, 0);
+					[\fltr, 0];
 				});
 				if (num >= 88 and: { num <= 90 }, {
-					fx1.midiCC(value, num);
+					[\fx1, num-88];
 				});
 				if (num == 106, {
-					fx1.midiCCIndex(value, 3);
+					[\fx1, 3];
 				});
 				if (num >= 109 and: { num <= 110 }, {
-					fx1.midiCCIndex(value, num-109+4);
+					[\fx1, num-109+4]
 				});
 				if (num >= 111 and: { num <= 116 }, {
-					fx0.midiCCIndex(value, num-111);
+					[\fx0, num-111];
 				});
 			},
 		);
+	}
+
+	noteOn { |func, type|
+		^MIDIFunc.noteOn({ |vel, num, chan, src|
+			if (src == midiOut.uid) {
+				var noteInfo = this.prNoteInfo(num, chan);
+				if (noteInfo.notNil and: {type.isNil or: { type == noteInfo[0] }}) {
+					var value = vel / 127.0;
+					func.value(value, num);
+				};
+			};
+		});
+	}
+
+	noteOff { |func, type|
+		^MIDIFunc.noteOff({ |vel, num, chan, src|
+			if (src == midiOut.uid) {
+				var noteInfo = this.prNoteInfo(num, chan);
+				if (noteInfo.notNil and: {type.isNil or: { type == noteInfo[0] }}) {
+					var value = vel / 127.0;
+					func.value(value, num);
+				};
+			};
+		});
+	}
+
+	cc { |func, type|
+		^MIDIFunc.cc({ |value, num, chan, src|
+			src.postln;
+			midiOut.uid.postln;
+			if (src == midiOut.uid) {
+				var ccInfo = this.prCCInfo(num, chan);
+				if ( ccInfo.notNil and: {type.isNil or: { type == ccInfo[0] }}) {
+					value = value / 127.0;
+					func.value(value, ccInfo[1]);
+				};
+			};
+		});
+
 	}
 
 }

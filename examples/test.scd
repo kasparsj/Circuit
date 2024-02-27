@@ -1,27 +1,28 @@
 (
-~circuit = Circuit.new().connect("Circuit", "Circuit MIDI 1");
-~circuit.syn0.cc = { |i, value|
+// ~circuit = Circuit.new().connect("Circuit", "Circuit MIDI 1");
+~circuit = Circuit.new.connect("M-Track", "M-Track MIDI 1");
+~circuit.cc({ |value, i|
 	("syn0: " + i + " " + value).postln;
-};
-~circuit.syn1.cc = { |i, value|
+}, \syn0);
+~circuit.cc({ |value, i|
 	("syn1: " + i + " " + value).postln;
-};
-~circuit.drum0.cc = { |i, value|
+}, \syn1);
+~circuit.cc({ |value, i|
 	("drum0: " + i + " " + value).postln;
-};
-~circuit.drum1.cc = { |i, value|
+}, \drum0);
+~circuit.cc({ |value, i|
 	("drum1: " + i + " " + value).postln;
-};
-~circuit.fltr.cc = { |i, value|
+}, \drum1);
+~circuit.cc({ |value, i|
 	("fltr: " + i + " " + value).postln;
-};
-~circuit.mix.cc = { |i, value|
+}, \fltr);
+~circuit.cc({ |value, i|
 	("mix: " + i + " " + value).postln;
-};
-~circuit.fx0.cc = { |i, value|
+}, \mix);
+~circuit.cc({ |value, i|
 	("fx0: " + i + " " + value).postln;
-};
-~circuit.fx1.cc = { |i, value|
+}, \fx0);
+~circuit.cc({ |value, i|
 	("fx1: " + i + " " + value).postln;
-};
+}, \fx1);
 )
