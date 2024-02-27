@@ -1,23 +1,18 @@
 Circuit {
 	classvar <numInstances = 0;
-	classvar <sections;
+	classvar <types;
+	classvar <config;
 
 	var <>server;
-	var <>syn0;
-	var <>syn1;
-	var <>drum0;
-	var <>drum1;
-	var <>mix;
-	var <>fx0;
-	var <>fx1;
-	var <>fltr;
+	var <buses;
 	var <out;
 
+	var <midiIn;
 	var <midiOut;
 
 
 	*initClass {
-		sections = (
+		config = (
 			\syn0: [Array.fill(8, 0), (80..87)],
 			\syn1: [Array.fill(8, 1), (80..87)],
 			\drum0: [Array.fill(8, 9), (14..21)],
@@ -27,6 +22,7 @@ Circuit {
 			\fx1: [Array.fill(6, 15), [88, 89, 90, 106, 109, 110]],
 			\fltr: [[15], [74]],
 		);
+		types = config.keys;
 	}
 
 	*new { |s=nil|
@@ -37,8 +33,9 @@ Circuit {
 	}
 
 	init {
-		sections.keysValuesDo { |key, value|
-			this.perform((key ++ "_").asSymbol, CircuitSection.new(this, key, value[0].size, value[0], value[1]));
+		buses = Dictionary.new;
+		config.keysValuesDo { |key, value|
+			buses[key] = Bus.control(server, value[0].size);
 		};
 		out = Bus.audio(server, 16);
 
@@ -51,6 +48,10 @@ Circuit {
 	}
 
 	deinit {
+		if (midiIn != nil, {
+			midiIn.free;
+			midiIn = nil;
+		});
 		if (midiOut != nil, {
 			midiOut.free;
 			midiOut = nil;
@@ -68,7 +69,7 @@ Circuit {
 		{
 			server.sync;
 			Ndef(\circuit).set(\inBus, out.index);
-			Ndef(\circuit).set(\ccBus, mix.bus.index);
+			Ndef(\circuit).set(\ccBus, buses[\mix].index);
 			Ndef(\circuit).play;
 		}.fork;
 	}
@@ -80,17 +81,35 @@ Circuit {
 		// todo: do we need to throw an error?
 	}
 
-	connect { |deviceName, portName, forceInit = false|
-		if (MIDIClient.initialized == false || forceInit, {
-			MIDIClient.init;
-		});
-		MIDIIn.connectAll;
-		// todo: should search for matching names
-		midiOut = MIDIOut.newByName(deviceName, portName);
+	connect { |deviceName, portName|
+		this.connectIn(deviceName, portName);
+		this.connectOut(deviceName, portName);
+	}
+
+	connectIn { |deviceName, portName|
+		MIDIClient.sources.do { |endpoint, i|
+			// todo: allow partial match
+			if (endpoint.device == deviceName and: { portName.isNil or: { portName == endpoint.name } }) {
+				try {
+					midiIn = MIDIIn.connect(i, MIDIClient.sources.at(i));
+				} { |err|
+					err.postln;
+				};
+			};
+		};
+	}
+
+	connectOut { |deviceName, portName|
+		MIDIClient.destinations.do {|endpoint, i|
+			// todo: allow partial match
+			if (endpoint.device == deviceName and: { portName.isNil or: { portName == endpoint.name } }) {
+				midiOut = MIDIOut.newByName(deviceName, endpoint.name);
+			};
+		};
 	}
 
 	prNoteInfo { |note = 60, chan = 0|
-		switch (chan,
+		^switch (chan,
 			0, {
 				[\syn0];
 			},
@@ -101,69 +120,96 @@ Circuit {
 	}
 
 	prCCInfo { |num, chan|
-		^switch (chan,
+		var info;
+		switch (chan,
 			0, {
-				if (num >= syn0.nums.first and: { num <= syn0.nums.last }) {
-					[\syn0, num-syn0.nums.first];
+				if (num >= config[\syn0][1].first and: { num <= config[\syn0][1].last }) {
+					info = [\syn0, num-config[\syn0][1].first];
 				};
 			},
 
 			1, {
-				if (num >= syn1.nums.first and: { num <= syn1.nums.last }) {
-					[\syn1, num-syn1.nums.first];
+				if (num >= config[\syn1][1].first and: { num <= config[\syn1][1].last }) {
+					info = [\syn1, num-config[\syn1][1].first];
 				};
 			},
 
 			9, {
 				if (num == 12, {
-					[\mix, 2];
+					info = [\mix, 2];
 				});
-				if (num >= 14 and: { num <= 21 }, {
-					[\drum0, num-14];
+				if (num >= 14 and: { num <= 17 }, {
+					info = [\drum0, (num-14)*2];
 				});
 				if (num == 23, {
-					[\mix, 3];
+					info = [\mix, 3];
+				});
+				if (num == 34, {
+					info = [\drum0, 1];
+				});
+				if (num == 40, {
+					info = [\drum0, 3];
+				});
+				if (num == 42, {
+					info = [\drum0, 5];
+				});
+				if (num == 43, {
+					info = [\drum0, 7];
 				});
 				if (num == 45, {
-					[\mix, 4];
+					info = [\mix, 4];
 				});
-				if (num >= 46 and: { num <= 53 }, {
-					[\drum1, num-46];
+				if (num >= 46 and: { num <= 49 }, {
+					info = [\drum1, (num-46)*2];
 				});
 				if (num == 53, {
-					[\mix, 5];
+					info = [\mix, 5];
+				});
+				if (num == 55, {
+					info = [\drum1, 1];
+				});
+				if (num == 57, {
+					info = [\drum1, 3];
+				});
+				if (num == 61, {
+					info = [\drum1, 5];
+				});
+				if (num == 76, {
+					info = [\drum1, 7];
 				});
 			},
 
 			15, {
 				if (num == 12, {
-					[\mix, 0];
+					info = [\mix, 0];
 				});
 				if (num == 14, {
-					[\mix, 1];
+					info = [\mix, 1];
 				});
 				if (num == 74, {
-					[\fltr, 0];
+					info = [\fltr, 0];
 				});
 				if (num >= 88 and: { num <= 90 }, {
-					[\fx1, num-88];
+					info = [\fx1, num-88];
 				});
 				if (num == 106, {
-					[\fx1, 3];
+					info = [\fx1, 3];
 				});
 				if (num >= 109 and: { num <= 110 }, {
-					[\fx1, num-109+4]
+					info = [\fx1, num-109+4]
 				});
 				if (num >= 111 and: { num <= 116 }, {
-					[\fx0, num-111];
+					info = [\fx0, num-111];
 				});
 			},
 		);
+		^info;
 	}
 
 	noteOn { |func, type|
 		^MIDIFunc.noteOn({ |vel, num, chan, src|
-			if (src == midiOut.uid) {
+			var midi = (midiIn ? midiOut);
+			if (midi.notNil and: {src == midi.uid}) {
 				var noteInfo = this.prNoteInfo(num, chan);
 				if (noteInfo.notNil and: {type.isNil or: { type == noteInfo[0] }}) {
 					var value = vel / 127.0;
@@ -175,7 +221,8 @@ Circuit {
 
 	noteOff { |func, type|
 		^MIDIFunc.noteOff({ |vel, num, chan, src|
-			if (src == midiOut.uid) {
+			var midi = (midiIn ? midiOut);
+			if (midi.notNil and: {src == midi.uid}) {
 				var noteInfo = this.prNoteInfo(num, chan);
 				if (noteInfo.notNil and: {type.isNil or: { type == noteInfo[0] }}) {
 					var value = vel / 127.0;
@@ -187,9 +234,8 @@ Circuit {
 
 	cc { |func, type|
 		^MIDIFunc.cc({ |value, num, chan, src|
-			src.postln;
-			midiOut.uid.postln;
-			if (src == midiOut.uid) {
+			var midi = (midiIn ? midiOut);
+			if (midi.notNil and: {src == midi.uid}) {
 				var ccInfo = this.prCCInfo(num, chan);
 				if ( ccInfo.notNil and: {type.isNil or: { type == ccInfo[0] }}) {
 					value = value / 127.0;
@@ -197,7 +243,13 @@ Circuit {
 				};
 			};
 		});
-
 	}
 
+	control { |chan, num, value|
+		midiOut.control(chan, num, value);
+	}
+
+	knob { |type, offset, value|
+		this.control(config[type][0][offset], config[type][1][offset], value * 127);
+	}
 }

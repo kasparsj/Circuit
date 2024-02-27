@@ -1,6 +1,6 @@
 (
-// ~circuit = Circuit.new().connect("Circuit", "Circuit MIDI 1");
-~circuit = Circuit.new.connect("M-Track", "M-Track MIDI 1");
+~circuit = Circuit.new.connect("Circuit");
+// ~circuit = Circuit.new.connect("M-Track");
 ~circuit.cc({ |value, i|
 	("syn0: " + i + " " + value).postln;
 }, \syn0);
@@ -25,4 +25,16 @@
 ~circuit.cc({ |value, i|
 	("fx1: " + i + " " + value).postln;
 }, \fx1);
+~circuit.noteOn({ |value, note|
+	("syn0 note on: " + note + " " + value).postln;
+}, \syn0);
+~circuit.noteOff({ |value, note|
+	("syn0 note off: " + note + " " + value).postln;
+}, \syn0);
+~circuit.noteOn({ |value, note|
+	("syn1 note on: " + note + " " + value).postln;
+}, \syn1);
+~circuit.noteOff({ |value, note|
+	("syn1 note off: " + note + " " + value).postln;
+}, \syn1);
 )
