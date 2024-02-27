@@ -1,5 +1,6 @@
 # Circuit
-Circuit SuperCollider quark
+
+SuperCollider quark for Novation Circuit
 
 ## Installation
 
