@@ -7,4 +7,4 @@ Circuit SuperCollider quark
 
 ## Usage
 
-See [examples/test.scd](https://github.com/kasparsj/Circuit/main/examples/test.scd)
+See [examples/test.scd](https://github.com/kasparsj/Circuit/main/blob/examples/test.scd)
