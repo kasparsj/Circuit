@@ -61,7 +61,17 @@
 )
 
 (
-// 4. send MIDI to Circuit
+// 4. receive program changes from Circuit
+~circuit.program({ |value|
+	("synth1 program change: " + value).postln;
+}, \synth1);
+~circuit.program({ |value|
+	("synth2 program change: " + value).postln;
+}, \synth2);
+)
+
+(
+// 5. send MIDI to Circuit
 
 // set first knob to full on
 ~circuit.setKnob(\synth1, 0, 127);
