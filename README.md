@@ -13,7 +13,7 @@ The library can be used to:
 - receive values of 51 knobs
 - set values of 51 knobs
 - receive note on/off events
-- receive program change events for synth1 and 2
+- receive program change events
 
 The knobs are segregated by section:
 
@@ -32,5 +32,11 @@ Note on/off events can be received for these sections:
 - synth2
 - drum12 (midinote 60 and 62)
 - drum34 (midinote 64 and 65)
+
+Program change events can be received from:
+
+- synth1
+- synth2
+- sessions
 
 Fox example source code see: [examples/test.scd](https://github.com/kasparsj/Circuit/blob/main/examples/test.scd)
