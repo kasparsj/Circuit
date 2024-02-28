@@ -15,7 +15,7 @@ The library can be used to:
 - receive noteOn events
 - receive noteOf events
 
-The functions are segregated by section:
+These functions can be segregated by section:
 
 - Synth1
 - Synth2
