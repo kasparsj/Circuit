@@ -13,7 +13,7 @@ The library can:
 - send/receive values of 51 knobs
 - send/receive note on/off events
 - send/receive program change events
-- emulate toggle mode behaviour for synth1 and synth2
+- emulate toggle mode behaviour
 
 The knobs are segregated by section:
 
@@ -38,5 +38,10 @@ Program change event types:
 - synth1
 - synth2
 - sessions
+
+It can emulate toggle mode (lights stay on) behaviour for:
+
+- synth1
+- synth2
 
 Fox example source code see: [examples/test.scd](https://github.com/kasparsj/Circuit/blob/main/examples/test.scd)
