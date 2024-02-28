@@ -32,7 +32,7 @@ Circuit {
 			\synth1: 0,
 			\synth2: 1,
 			\drums: 9,
-			\fx: 15,
+			\sessions: 15,
 		);
 		this.configure;
 
@@ -52,10 +52,10 @@ Circuit {
 			\synth2: [Array.fill(8, chans[\synth2]), (80..87)],
 			\drum12: [Array.fill(8, chans[\drums]), [14, 34, 15, 40, 16, 42, 17, 43]],
 			\drum34: [Array.fill(8, chans[\drums]), [ 46, 55, 47, 57, 48, 61, 49, 76]],
-			\mixer: [[chans[\fx], chans[\fx], chans[\drums], chans[\drums], chans[\drums], chans[\drums]], [12, 14, 12, 23, 45, 53]],
-			\fx1: [Array.fill(6, chans[\fx]), (111..116)], // REVERB (first row)
-			\fx2: [Array.fill(6, chans[\fx]), [88, 89, 90, 106, 109, 110]], // DELAY (second row)
-			\filter: [[chans[\fx]], [74]],
+			\mixer: [[chans[\sessions], chans[\sessions], chans[\drums], chans[\drums], chans[\drums], chans[\drums]], [12, 14, 12, 23, 45, 53]],
+			\fx1: [Array.fill(6, chans[\sessions]), (111..116)], // REVERB (first row)
+			\fx2: [Array.fill(6, chans[\sessions]), [88, 89, 90, 106, 109, 110]], // DELAY (second row)
+			\filter: [[chans[\sessions]], [74]],
 		);
 		midiChans = chans;
 		midiCCs = Dictionary.new;
@@ -240,9 +240,15 @@ Circuit {
 						programListeners.do { |listener|
 							{ |func, type|
 								if (type.isNil or: { chanInfo == type }) {
-									programChange = value;
-									programChangeType = (type ? chanInfo);
-									break.value;
+									if (chanInfo == \sessions) {
+										{ |func, type|
+											func.value(value % 32, chanInfo);
+										}.valueArray(listener);
+									} {
+										programChange = value;
+										programChangeType = chanInfo;
+										break.value;
+									};
 								};
 							}.valueArray(listener);
 						};
@@ -268,6 +274,7 @@ Circuit {
 		^switch (chan,
 			{midiChans[\synth1]}, { \synth1 },
 			{midiChans[\synth2]}, { \synth2 },
+			{midiChans[\sessions]}, { \sessions },
 		);
 	}
 

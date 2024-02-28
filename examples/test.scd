@@ -68,6 +68,9 @@
 ~circuit.program({ |value|
 	("synth2 program change: " + value).postln;
 }, \synth2);
+~circuit.program({ |value|
+	("sessions program change: " + value).postln;
+}, \sessions);
 )
 
 (
@@ -93,7 +96,6 @@ Circuit.configure((
 	\synth1: 2,
 	\synth2: 3
 	\drums: 4,
-	\fx: 5,
 ));
 // restore defaults midi channel config
 Circuit.configure(Circuit.defaultChans)
