@@ -1,7 +1,6 @@
 Circuit {
 	classvar <numInstances = 0;
-	classvar <types;
-	classvar <config;
+	classvar <>config;
 
 	var <>server;
 	var <buses;
@@ -23,7 +22,14 @@ Circuit {
 			\fx2: [Array.fill(6, 15), [88, 89, 90, 106, 109, 110]], // DELAY (second row)
 			\filter: [[15], [74]], // FILTER KNOB
 		);
-		types = config.keys;
+
+		Class.initClassTree(Event);
+		Event.addEventType(\circuit, { |server|
+			if  (~midicmd != nil) {
+				if (~midiout == nil, { ~midiout = ~circuit.midiOut; });
+				~eventTypes[\midi].value(server);
+			};
+		});
 	}
 
 	*new { |s=nil|
