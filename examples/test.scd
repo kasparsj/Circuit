@@ -64,11 +64,23 @@
 )
 
 (
-// optinally normalize input/output
+// optionally normalize input/output
 ~circuit.normalize = true;
 ~circuit.cc({ |value, i|
 	// now value is between 0.0 and 1.0
 	("synth1 knob " + i + ": " + value).postln;
 }, \synth1);
 ~circuit.knob(\synth1, 0, 1); // same as above
+)
+
+(
+// if you've reconfigured midi channels, e.g.:
+Circuit.configure((
+	\synth1: 2,
+	\synth2: 3
+	\drums: 4,
+	\fx: 5,
+));
+// restore defaults midi channel config
+Circuit.configure(Circuit.defaultChans)
 )

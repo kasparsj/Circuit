@@ -1,6 +1,8 @@
 Circuit {
 	classvar <numInstances = 0;
-	classvar <>config;
+	classvar <defaultChans;
+	classvar <midiChans;
+	classvar <config;
 
 	var <>server;
 	var <buses;
@@ -12,16 +14,13 @@ Circuit {
 
 
 	*initClass {
-		config = (
-			\synth1: [Array.fill(8, 0), (80..87)], // SYNTH 1
-			\synth2: [Array.fill(8, 1), (80..87)], // SYNTH 2
-			\drum12: [Array.fill(8, 9), (14..21)], // DRUM 1-2
-			\drum34: [Array.fill(8, 9), (46..53)], // DRUM 3-4
-			\mixer: [[15, 15, 9, 9, 9, 9], [12, 14, 12, 23, 45, 53]], // mixerER
-			\fx1: [Array.fill(6, 15), (111..116)], // REVERB (first row)
-			\fx2: [Array.fill(6, 15), [88, 89, 90, 106, 109, 110]], // DELAY (second row)
-			\filter: [[15], [74]], // FILTER KNOB
+		defaultChans = (
+			\synth1: 0,
+			\synth2: 1,
+			\drums: 9,
+			\fx: 15,
 		);
+		this.configure;
 
 		Class.initClassTree(Event);
 		Event.addEventType(\circuit, { |server|
@@ -30,6 +29,21 @@ Circuit {
 				~eventTypes[\midi].value(server);
 			};
 		});
+	}
+
+	*configure { |chans|
+		chans = defaultChans ++ (chans ? ());
+		config = (
+			\synth1: [Array.fill(8, chans[\synth1]), (80..87)],
+			\synth2: [Array.fill(8, chans[\synth2]), (80..87)],
+			\drum12: [Array.fill(8, chans[\drums]), (14..21)],
+			\drum34: [Array.fill(8, chans[\drums]), (46..53)],
+			\mixer: [[chans[\fx], chans[\fx], chans[\drums], chans[\drums], chans[\drums], chans[\drums]], [12, 14, 12, 23, 45, 53]],
+			\fx1: [Array.fill(6, chans[\fx]), (111..116)], // REVERB (first row)
+			\fx2: [Array.fill(6, chans[\fx]), [88, 89, 90, 106, 109, 110]], // DELAY (second row)
+			\filter: [[chans[\fx]], [74]],
+		);
+		midiChans = chans;
 	}
 
 	*new { |s=nil|
@@ -117,40 +131,36 @@ Circuit {
 
 	prNoteInfo { |note = 60, chan = 0|
 		^switch (chan,
-			0, {
-				[\synth1];
-			},
-			1, {
-				[\synth2];
-			},
-			9, {
+			{midiChans[\synth1]}, { [\synth1] },
+			{midiChans[\synth2]}, { [\synth2] },
+			{midiChans[\drums]}, {
 				if (note == 60 or: {note == 62}) {
 					[\drum12];
 				} {
 					//if (note == 64 or: {note == 65}) {
-						[\drum34];
+					[\drum34];
 					//};
 				};
-			}
+			},
 		);
 	}
 
 	prCCInfo { |num, chan|
 		var info;
 		switch (chan,
-			0, {
+			{midiChans[\synth1]}, {
 				if (num >= config[\synth1][1].first and: { num <= config[\synth1][1].last }) {
 					info = [\synth1, num-config[\synth1][1].first];
 				};
 			},
 
-			1, {
+			{midiChans[\synth2]}, {
 				if (num >= config[\synth2][1].first and: { num <= config[\synth2][1].last }) {
 					info = [\synth2, num-config[\synth2][1].first];
 				};
 			},
 
-			9, {
+			{midiChans[\drums]}, {
 				if (num == 12, {
 					info = [\mixer, 2];
 				});
@@ -195,7 +205,7 @@ Circuit {
 				});
 			},
 
-			15, {
+			{midiChans[\fx]}, {
 				if (num == 12, {
 					info = [\mixer, 0];
 				});
