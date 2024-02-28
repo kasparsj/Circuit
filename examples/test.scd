@@ -78,6 +78,9 @@
 
 // set first knob to full on
 ~circuit.setKnob(\synth1, 0, 127);
+
+// choose second patch for synth1
+~circuit.setProgram(\synth1, 1);
 )
 
 (

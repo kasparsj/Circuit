@@ -356,6 +356,6 @@ Circuit {
 		if (midiOut.isNil, {
 			("Circuit.control: midiOut not connected").throw;
 		});
-		midiOut.program(chan, num % 32);
+		midiOut.program(midiChans[type], num % 32);
 	}
 }
