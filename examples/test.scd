@@ -5,7 +5,7 @@
 )
 
 (
-// 2. receive MIDI from Circuit
+// 2. receive knob values from Circuit
 ~circuit.cc({ |value, i|
 	("synth1 knob " + i + ": " + value).postln;
 }, \synth1);
@@ -30,24 +30,28 @@
 ~circuit.cc({ |value, i|
 	("fx2 knob " + i + ": " + value).postln;
 }, \fx2);
+)
+
+(
+// 3. receive note on/off/toggle from Circuit
 ~circuit.noteOn({ |value, note|
 	("synth1 note on: " + note + " " + value).postln;
 }, \synth1);
 ~circuit.noteOff({ |value, note|
 	("synth1 note off: " + note + " " + value).postln;
 }, \synth1);
-~circuit.noteOn({ |value, note|
-	("synth2 note on: " + note + " " + value).postln;
+
+~circuit.noteToggle({ |value, note|
+	("synth2 note toggle: " + note + " " + value).postln;
 }, \synth2);
-~circuit.noteOff({ |value, note|
-	("synth2 note off: " + note + " " + value).postln;
-}, \synth2);
+
 ~circuit.noteOn({ |value, note|
 	("drum12 note on: " + note + " " + value).postln;
 }, \drum12);
 ~circuit.noteOff({ |value, note|
 	("drum12 note off: " + note + " " + value).postln;
 }, \drum12);
+
 ~circuit.noteOn({ |value, note|
 	("drum34 note on: " + note + " " + value).postln;
 }, \drum34);
@@ -57,10 +61,10 @@
 )
 
 (
-// 3. send MIDI to Circuit
+// 4. send MIDI to Circuit
 
 // set first knob to full on
-~circuit.knob(\synth1, 0, 127);
+~circuit.setKnob(\synth1, 0, 127);
 )
 
 (
@@ -70,7 +74,7 @@
 	// now value is between 0.0 and 1.0
 	("synth1 knob " + i + ": " + value).postln;
 }, \synth1);
-~circuit.knob(\synth1, 0, 1); // same as above
+~circuit.setKnob(\synth1, 0, 1); // same as above
 )
 
 (

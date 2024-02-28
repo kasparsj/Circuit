@@ -9,6 +9,7 @@ Circuit {
 	var <buses;
 	var <out;
 	var <>normalize = false;
+	var <noteToggles;
 
 	var <midiIn;
 	var <midiOut;
@@ -38,7 +39,7 @@ Circuit {
 			\synth1: [Array.fill(8, chans[\synth1]), (80..87)],
 			\synth2: [Array.fill(8, chans[\synth2]), (80..87)],
 			\drum12: [Array.fill(8, chans[\drums]), [14, 34, 15, 40, 16, 42, 17, 43]],
-			\drum34: [Array.fill(8, chans[\drums]), [46, 55, 47, 57, 48, 61, 49, 76]],
+			\drum34: [Array.fill(8, chans[\drums]), [ 46, 55, 47, 57, 48, 61, 49, 76]],
 			\mixer: [[chans[\fx], chans[\fx], chans[\drums], chans[\drums], chans[\drums], chans[\drums]], [12, 14, 12, 23, 45, 53]],
 			\fx1: [Array.fill(6, chans[\fx]), (111..116)], // REVERB (first row)
 			\fx2: [Array.fill(6, chans[\fx]), [88, 89, 90, 106, 109, 110]], // DELAY (second row)
@@ -68,6 +69,7 @@ Circuit {
 			buses[key] = Bus.control(server, value[0].size);
 		};
 		out = Bus.audio(server, 16);
+		noteToggles = Dictionary.new;
 
 		this.initNdef;
 
@@ -164,10 +166,10 @@ Circuit {
 		};
 	}
 
-	noteOn { |func, type|
+	noteOn { |func, type, note|
 		^MIDIFunc.noteOn({ |vel, num, chan, src|
 			var midi = (midiIn ? midiOut);
-			if (midi.notNil and: {src == midi.uid}) {
+			if (midi.notNil and: {src == midi.uid} and: {note.isNil or: {note == num}}) {
 				var noteInfo = this.prNoteInfo(num, chan);
 				if (type.isNil or: { noteInfo.notNil and: {type == noteInfo[0]} }) {
 					var value = if (normalize, vel / 127.0, vel);
@@ -178,10 +180,10 @@ Circuit {
 		});
 	}
 
-	noteOff { |func, type|
+	noteOff { |func, type, note|
 		^MIDIFunc.noteOff({ |vel, num, chan, src|
 			var midi = (midiIn ? midiOut);
-			if (midi.notNil and: {src == midi.uid}) {
+			if (midi.notNil and: {src == midi.uid} and: {note.isNil or: {note == num}}) {
 				var noteInfo = this.prNoteInfo(num, chan);
 				if (type.isNil or: { noteInfo.notNil and: {type == noteInfo[0]} }) {
 					var value = if (normalize, vel / 127.0, vel);
@@ -190,6 +192,18 @@ Circuit {
 				};
 			};
 		});
+	}
+
+	noteToggle { |func, type, note|
+		if (type.isNil, {
+			("Circuit.noteToggle: type is required").throw;
+		});
+		if (noteToggles[type].isNil, { noteToggles[type] = Dictionary.new; });
+		this.noteOff({ |value, num, info|
+			if (noteToggles[type][num].isNil, { noteToggles[type][num] = false });
+			noteToggles[type][num] = noteToggles[type][num].not;
+			func.value(noteToggles[type][num], num, info);
+		}, type, note);
 	}
 
 	cc { |func, type|
@@ -216,10 +230,10 @@ Circuit {
 		midiOut.control(chan, num, value);
 	}
 
-	knob { |type, offset, value|
+	setKnob { |type, index, value|
 		if (config[type].isNil, {
 			("Circuit.knob: unknown type " ++ type).throw;
 		});
-		this.control(config[type][0][offset], config[type][1][offset], value * if (normalize, 127.0, 1.0));
+		this.control(config[type][0][index], config[type][1][index], value * if (normalize, 127.0, 1.0));
 	}
 }
