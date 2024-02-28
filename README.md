@@ -1,6 +1,6 @@
 # Circuit
 
-SuperCollider quark for Novation Circuit
+SuperCollider quark for using Novation Circuit as a MIDI controller
 
 ## Installation
 
