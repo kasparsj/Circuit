@@ -5,59 +5,70 @@
 )
 
 (
-// 2. receive MIDI values from Circuit
+// 2. receive MIDI from Circuit
 ~circuit.cc({ |value, i|
-	("syn0: " + i + " " + value).postln;
-}, \syn0); // SYNTH 1 knobs
+	("synth1 knob " + i + ": " + value).postln;
+}, \synth1);
 ~circuit.cc({ |value, i|
-	("syn1: " + i + " " + value).postln;
-}, \syn1); // SYNTH 2 knobs
+	("synth2 knob " + i + ": " + value).postln;
+}, \synth2);
 ~circuit.cc({ |value, i|
-	("drum0: " + i + " " + value).postln;
-}, \drum0); // DRUM 1-2 knobs
+	("drum12 knob " + i + ": " + value).postln;
+}, \drum12);
 ~circuit.cc({ |value, i|
-	("drum1: " + i + " " + value).postln;
-}, \drum1); // DRUM 3-4 knobs
+	("drum34 knob " + i + ": " + value).postln;
+}, \drum34);
 ~circuit.cc({ |value, i|
-	("fltr: " + i + " " + value).postln;
-}, \fltr); // FILTER knob
+	("filter knob: " + value).postln;
+}, \filter);
 ~circuit.cc({ |value, i|
-	("mix: " + i + " " + value).postln;
-}, \mix); // MIXER knobs
+	("mixer knob " + i + ": " + value).postln;
+}, \mixer);
 ~circuit.cc({ |value, i|
-	("fx0: " + i + " " + value).postln;
-}, \fx0); // FX 1 REVERB knobs
+	("fx1 knob " + i + ": " + value).postln;
+}, \fx1);
 ~circuit.cc({ |value, i|
-	("fx1: " + i + " " + value).postln;
-}, \fx1); // FX 2 DELAY knobs
+	("fx2 knob " + i + ": " + value).postln;
+}, \fx2);
 ~circuit.noteOn({ |value, note|
-	("syn0 note on: " + note + " " + value).postln;
-}, \syn0); // SYNTH 1 note on
+	("synth1 note on: " + note + " " + value).postln;
+}, \synth1);
 ~circuit.noteOff({ |value, note|
-	("syn0 note off: " + note + " " + value).postln;
-}, \syn0); // SYNTH 1 note off
+	("synth1 note off: " + note + " " + value).postln;
+}, \synth1);
 ~circuit.noteOn({ |value, note|
-	("syn1 note on: " + note + " " + value).postln;
-}, \syn1); // SYNTH 2 note on
+	("synth2 note on: " + note + " " + value).postln;
+}, \synth2);
 ~circuit.noteOff({ |value, note|
-	("syn1 note off: " + note + " " + value).postln;
-}, \syn1); // SYNTH 2 note off
+	("synth2 note off: " + note + " " + value).postln;
+}, \synth2);
 ~circuit.noteOn({ |value, note|
-	("drum0 note on: " + note + " " + value).postln;
-}, \drum0); // DRUM 1-2 note on
+	("drum12 note on: " + note + " " + value).postln;
+}, \drum12);
 ~circuit.noteOff({ |value, note|
-	("drum0 note off: " + note + " " + value).postln;
-}, \drum0); // DRUM 1-2 note off
+	("drum12 note off: " + note + " " + value).postln;
+}, \drum12);
 ~circuit.noteOn({ |value, note|
-	("drum1 note on: " + note + " " + value).postln;
-}, \drum1); // DRUM 3-4 note on
+	("drum34 note on: " + note + " " + value).postln;
+}, \drum34);
 ~circuit.noteOff({ |value, note|
-	("drum1 note off: " + note + " " + value).postln;
-}, \drum1); // DRUM 3-4 note off
+	("drum34 note off: " + note + " " + value).postln;
+}, \drum34);
 )
 
 (
-// 3. send MIDI values
-// change knob value
-~circuit.knob(\syn0, 0, 0);
+// 3. send MIDI to Circuit
+
+// set first knob to full on
+~circuit.knob(\synth1, 0, 127);
+)
+
+(
+// optinally normalize input/output
+~circuit.normalize = true;
+~circuit.cc({ |value, i|
+	// now value is between 0.0 and 1.0
+	("synth1 knob " + i + ": " + value).postln;
+}, \synth1);
+~circuit.knob(\synth1, 0, 1); // same as above
 )

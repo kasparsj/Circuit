@@ -6,6 +6,7 @@ Circuit {
 	var <>server;
 	var <buses;
 	var <out;
+	var <>normalize = false;
 
 	var <midiIn;
 	var <midiOut;
@@ -13,14 +14,14 @@ Circuit {
 
 	*initClass {
 		config = (
-			\syn0: [Array.fill(8, 0), (80..87)], // SYNTH 1
-			\syn1: [Array.fill(8, 1), (80..87)], // SYNTH 2
-			\drum0: [Array.fill(8, 9), (14..21)], // DRUM 1-2
-			\drum1: [Array.fill(8, 9), (46..53)], // DRUM 3-4
-			\mix: [[15, 15, 9, 9, 9, 9], [12, 14, 12, 23, 45, 53]], // MIXER
-			\fx0: [Array.fill(6, 15), (111..116)], // REVERB (first row)
-			\fx1: [Array.fill(6, 15), [88, 89, 90, 106, 109, 110]], // DELAY (second row)
-			\fltr: [[15], [74]], // FILTER KNOB
+			\synth1: [Array.fill(8, 0), (80..87)], // SYNTH 1
+			\synth2: [Array.fill(8, 1), (80..87)], // SYNTH 2
+			\drum12: [Array.fill(8, 9), (14..21)], // DRUM 1-2
+			\drum34: [Array.fill(8, 9), (46..53)], // DRUM 3-4
+			\mixer: [[15, 15, 9, 9, 9, 9], [12, 14, 12, 23, 45, 53]], // mixerER
+			\fx1: [Array.fill(6, 15), (111..116)], // REVERB (first row)
+			\fx2: [Array.fill(6, 15), [88, 89, 90, 106, 109, 110]], // DELAY (second row)
+			\filter: [[15], [74]], // FILTER KNOB
 		);
 		types = config.keys;
 	}
@@ -69,7 +70,7 @@ Circuit {
 		{
 			server.sync;
 			Ndef(\circuit).set(\inBus, out.index);
-			Ndef(\circuit).set(\ccBus, buses[\mix].index);
+			Ndef(\circuit).set(\ccBus, buses[\mixer].index);
 			Ndef(\circuit).play;
 		}.fork;
 	}
@@ -111,17 +112,17 @@ Circuit {
 	prNoteInfo { |note = 60, chan = 0|
 		^switch (chan,
 			0, {
-				[\syn0];
+				[\synth1];
 			},
 			1, {
-				[\syn1];
+				[\synth2];
 			},
 			9, {
 				if (note == 60 or: {note == 62}) {
-					[\drum0];
+					[\drum12];
 				} {
 					//if (note == 64 or: {note == 65}) {
-						[\drum1];
+						[\drum34];
 					//};
 				};
 			}
@@ -132,83 +133,83 @@ Circuit {
 		var info;
 		switch (chan,
 			0, {
-				if (num >= config[\syn0][1].first and: { num <= config[\syn0][1].last }) {
-					info = [\syn0, num-config[\syn0][1].first];
+				if (num >= config[\synth1][1].first and: { num <= config[\synth1][1].last }) {
+					info = [\synth1, num-config[\synth1][1].first];
 				};
 			},
 
 			1, {
-				if (num >= config[\syn1][1].first and: { num <= config[\syn1][1].last }) {
-					info = [\syn1, num-config[\syn1][1].first];
+				if (num >= config[\synth2][1].first and: { num <= config[\synth2][1].last }) {
+					info = [\synth2, num-config[\synth2][1].first];
 				};
 			},
 
 			9, {
 				if (num == 12, {
-					info = [\mix, 2];
+					info = [\mixer, 2];
 				});
 				if (num >= 14 and: { num <= 17 }, {
-					info = [\drum0, (num-14)*2];
+					info = [\drum12, (num-14)*2];
 				});
 				if (num == 23, {
-					info = [\mix, 3];
+					info = [\mixer, 3];
 				});
 				if (num == 34, {
-					info = [\drum0, 1];
+					info = [\drum12, 1];
 				});
 				if (num == 40, {
-					info = [\drum0, 3];
+					info = [\drum12, 3];
 				});
 				if (num == 42, {
-					info = [\drum0, 5];
+					info = [\drum12, 5];
 				});
 				if (num == 43, {
-					info = [\drum0, 7];
+					info = [\drum12, 7];
 				});
 				if (num == 45, {
-					info = [\mix, 4];
+					info = [\mixer, 4];
 				});
 				if (num >= 46 and: { num <= 49 }, {
-					info = [\drum1, (num-46)*2];
+					info = [\drum34, (num-46)*2];
 				});
 				if (num == 53, {
-					info = [\mix, 5];
+					info = [\mixer, 5];
 				});
 				if (num == 55, {
-					info = [\drum1, 1];
+					info = [\drum34, 1];
 				});
 				if (num == 57, {
-					info = [\drum1, 3];
+					info = [\drum34, 3];
 				});
 				if (num == 61, {
-					info = [\drum1, 5];
+					info = [\drum34, 5];
 				});
 				if (num == 76, {
-					info = [\drum1, 7];
+					info = [\drum34, 7];
 				});
 			},
 
 			15, {
 				if (num == 12, {
-					info = [\mix, 0];
+					info = [\mixer, 0];
 				});
 				if (num == 14, {
-					info = [\mix, 1];
+					info = [\mixer, 1];
 				});
 				if (num == 74, {
-					info = [\fltr, 0];
+					info = [\filter, 0];
 				});
 				if (num >= 88 and: { num <= 90 }, {
-					info = [\fx1, num-88];
+					info = [\fx2, num-88];
 				});
 				if (num == 106, {
-					info = [\fx1, 3];
+					info = [\fx2, 3];
 				});
 				if (num >= 109 and: { num <= 110 }, {
-					info = [\fx1, num-109+4]
+					info = [\fx2, num-109+4]
 				});
 				if (num >= 111 and: { num <= 116 }, {
-					info = [\fx0, num-111];
+					info = [\fx1, num-111];
 				});
 			},
 		);
@@ -221,7 +222,7 @@ Circuit {
 			if (midi.notNil and: {src == midi.uid}) {
 				var noteInfo = this.prNoteInfo(num, chan);
 				if (type.isNil or: { noteInfo.notNil and: {type == noteInfo[0]} }) {
-					var value = vel / 127.0;
+					var value = if (normalize, vel / 127.0, vel);
 					var typeInfo = if (noteInfo.notNil, noteInfo[0], chan);
 					func.value(value, num, typeInfo);
 				};
@@ -235,7 +236,7 @@ Circuit {
 			if (midi.notNil and: {src == midi.uid}) {
 				var noteInfo = this.prNoteInfo(num, chan);
 				if (type.isNil or: { noteInfo.notNil and: {type == noteInfo[0]} }) {
-					var value = vel / 127.0;
+					var value = if (normalize, vel / 127.0, vel);
 					var typeInfo = if (noteInfo.notNil, noteInfo[0], chan);
 					func.value(value, num, typeInfo);
 				};
@@ -249,7 +250,7 @@ Circuit {
 			if (midi.notNil and: {src == midi.uid}) {
 				var ccInfo = this.prCCInfo(num, chan);
 				if (type.isNil or: { ccInfo.notNil and: {type == ccInfo[0]} }) {
-					value = value / 127.0;
+					value = if (normalize, value / 127.0, value);
 					if (ccInfo.notNil, {
 						func.value(value, ccInfo[1], ccInfo[0]);
 					}, {
@@ -271,6 +272,6 @@ Circuit {
 		if (config[type].isNil, {
 			("Circuit.knob: unknown type " ++ type).throw;
 		});
-		this.control(config[type][0][offset], config[type][1][offset], value * 127);
+		this.control(config[type][0][offset], config[type][1][offset], value * if (normalize, 127.0, 1.0));
 	}
 }
