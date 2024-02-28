@@ -13,7 +13,7 @@ The library can be used to:
 - receive knob values
 - set knob values
 - receive noteOn events
-- receive noteOf events
+- receive noteOff events
 
 These functions can be segregated by section:
 
