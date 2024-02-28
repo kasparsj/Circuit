@@ -261,10 +261,16 @@ Circuit {
 	}
 
 	control { |chan, num, value|
+		if (midiOut.isNil, {
+			("Circuit.control: midiOut not connected").throw;
+		});
 		midiOut.control(chan, num, value);
 	}
 
 	knob { |type, offset, value|
+		if (config[type].isNil, {
+			("Circuit.knob: unknown type " ++ type).throw;
+		});
 		this.control(config[type][0][offset], config[type][1][offset], value * 127);
 	}
 }
