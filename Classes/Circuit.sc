@@ -12,6 +12,7 @@ Circuit {
 	var <midiIn;
 	var <midiOut;
 
+	var <>checkSrc = true;
 	var <>normalize = false;
 	var <noteOnFn;
 	var <noteOffFn;
@@ -21,10 +22,10 @@ Circuit {
 	var <noteOffListeners;
 	var <ccListeners;
 	var <programListeners;
-	var <noteToggles;
 	var <programChange = false;
 	var <programChangeType = false;
 	var <programChangeNotes;
+	var <toggleModeNotes;
 
 
 	*initClass {
@@ -86,8 +87,8 @@ Circuit {
 		noteOffListeners = [];
 		ccListeners = [];
 		programListeners = [];
-		noteToggles = Dictionary.new;
 		programChangeNotes = [];
+		toggleModeNotes = Dictionary.new;
 
 		this.initNdef;
 
@@ -174,88 +175,121 @@ Circuit {
 	initMidiFns {
 		noteOnFn = MIDIFunc.noteOn({ |vel, num, chan, src|
 			var midi = (midiIn ? midiOut);
-			if (midi.notNil and: {src == midi.uid}) {
-				var noteType = this.prNoteType(num, chan);
-				if (noteType.notNil and: { programChangeType == noteType }) {
-					programChangeNotes = programChangeNotes.add(num);
-					if (programChangeNotes.size == 1) {
-						this.prFilterListeners(programListeners, num, noteType).do { |listener|
-							{ |func, type|
-								func.value(programChange % 32, noteType);
-							}.valueArray(listener);
-						};
-					};
-				} {
-					this.prFilterListeners(noteOnListeners, num, noteType).do { |listener|
-						{ |func, type, note|
-							var value = if (normalize, vel / 127.0, vel);
-							func.value(value, num, noteType ? chan);
-						}.valueArray(listener);
-					};
-				};
+			if (checkSrc and: {midi.notNil and: {src == midi.uid}}) {
+				this.prOnNoteOn(vel, num, chan);
 			};
 		});
 		noteOffFn = MIDIFunc.noteOff({ |vel, num, chan, src|
 			var midi = (midiIn ? midiOut);
-			if (midi.notNil and: {src == midi.uid}) {
-				var noteType = this.prNoteType(num, chan);
-				if (noteType.notNil and: { programChangeType == noteType }) {
-					programChangeNotes.removeAt(programChangeNotes.indexOf(num));
-					if (programChangeNotes.size == 0) {
-						programChange = false;
-						programChangeType = false;
-					};
-				} {
-					this.prFilterListeners(noteOffListeners, num, noteType).do { |listener|
-						{ |func, type, note|
-							var value = if (normalize, vel / 127.0, vel);
-							func.value(value, num, noteType ? chan);
-						}.valueArray(listener);
-					};
-				};
+			if (checkSrc and: {midi.notNil and: {src == midi.uid}}) {
+				this.prOnNoteOff(vel, num, chan);
 			};
 		});
 		ccFn = MIDIFunc.cc({ |value, num, chan, src|
 			var midi = (midiIn ? midiOut);
-			if (midi.notNil and: {src == midi.uid}) {
-				var ccInfo = this.prCCInfo(num, chan);
-				this.prFilterListeners(ccListeners, num, if (ccInfo.notNil, { ccInfo[0] })).do { |listener|
-					{ |func, type, note|
-						value = if (normalize, value / 127.0, value);
-						if (ccInfo.notNil, {
-							func.value(value, ccInfo[1], ccInfo[0]);
-						}, {
-							func.value(value, num, chan);
-						});
-					}.valueArray(listener);
-				};
+			if (checkSrc and: {midi.notNil and: {src == midi.uid}}) {
+				this.prOnControl(value, num, chan);
 			};
 		});
 		programFn = MIDIFunc.program({ |value, chan, src|
 			var midi = (midiIn ? midiOut);
-			if (midi.notNil and: {src == midi.uid}) {
-				var chanInfo = this.prChanInfo(chan);
-				if (chanInfo.notNil) {
-					block { |break|
-						programListeners.do { |listener|
-							{ |func, type|
-								if (type.isNil or: { chanInfo == type }) {
-									if (chanInfo == \sessions) {
-										{ |func, type|
-											func.value(value % 32, chanInfo);
-										}.valueArray(listener);
-									} {
-										programChange = value;
-										programChangeType = chanInfo;
-										break.value;
-									};
-								};
-							}.valueArray(listener);
-						};
-					};
-				};
+			if (checkSrc and: {midi.notNil and: {src == midi.uid}}) {
+				this.prOnProgram(value, chan);
 			};
 		});
+	}
+
+	prOnNoteOn { |vel, num, chan|
+		var noteType = this.prNoteType(num, chan);
+		if (noteType.notNil and: { programChangeType == noteType }) {
+			programChangeNotes = programChangeNotes.add(num);
+			if (programChangeNotes.size == 1) {
+				this.prFilterListeners(programListeners, num, noteType).do { |listener|
+					{ |func, type|
+						func.value(programChange % 32, noteType);
+					}.valueArray(listener);
+				};
+			};
+		} {
+			block { |break|
+				if (noteType.notNil and: { toggleModeNotes[noteType].notNil and: { toggleModeNotes[noteType][num].notNil } }) {
+					break.value;
+				};
+				this.prFilterListeners(noteOnListeners, num, noteType).do { |listener|
+					{ |func, type, note|
+						var value = if (normalize, vel / 127.0, vel);
+						func.value(value, num, noteType ? chan);
+					}.valueArray(listener);
+				};
+			};
+		};
+	}
+
+	prOnNoteOff { |vel, num, chan|
+		var noteType = this.prNoteType(num, chan);
+		if (noteType.notNil and: { programChangeType == noteType }) {
+			programChangeNotes.removeAt(programChangeNotes.indexOf(num));
+			if (programChangeNotes.size == 0) {
+				programChange = false;
+				programChangeType = false;
+			};
+		} {
+			block { |break|
+				if (noteType.notNil and: { toggleModeNotes[noteType].notNil }) {
+					if (toggleModeNotes[noteType][num].isNil) {
+						toggleModeNotes[noteType][num] = 127;
+						this.noteOn(noteType, num, 127, false);
+						break.value;
+					} {
+						toggleModeNotes[noteType].removeAt(num);
+						this.noteOff(noteType, num, 0, false);
+					};
+				};
+				this.prFilterListeners(noteOffListeners, num, noteType).do { |listener|
+					{ |func, type, note|
+						var value = if (normalize, vel / 127.0, vel);
+						func.value(value, num, noteType ? chan);
+					}.valueArray(listener);
+				};
+			};
+		};
+	}
+
+	prOnControl { |value, num, chan|
+		var ccInfo = this.prCCInfo(num, chan);
+		this.prFilterListeners(ccListeners, num, if (ccInfo.notNil, { ccInfo[0] })).do { |listener|
+			{ |func, type, note|
+				value = if (normalize, value / 127.0, value);
+				if (ccInfo.notNil, {
+					func.value(value, ccInfo[1], ccInfo[0]);
+				}, {
+					func.value(value, num, chan);
+				});
+			}.valueArray(listener);
+		};
+	}
+
+	prOnProgram { |value, chan|
+		var chanInfo = this.prChanInfo(chan);
+		if (chanInfo.notNil) {
+			block { |break|
+				programListeners.do { |listener|
+					{ |func, type|
+						if (type.isNil or: { chanInfo == type }) {
+							if (chanInfo == \sessions) {
+								{ |func, type|
+									func.value(value % 32, chanInfo);
+								}.valueArray(listener);
+							} {
+								programChange = value;
+								programChangeType = chanInfo;
+								break.value;
+							};
+						};
+					}.valueArray(listener);
+				};
+			};
+		};
 	}
 
 	prFilterListeners { |listeners, num, noteType|
@@ -312,18 +346,6 @@ Circuit {
 		noteOffListeners = noteOffListeners.add([func, type, note]);
 	}
 
-	onNoteToggle { |func, type, note|
-		if (type.isNil, {
-			("Circuit.onNoteToggle: type is required").throw;
-		});
-		if (noteToggles[type].isNil, { noteToggles[type] = Dictionary.new; });
-		this.noteOff({ |value, num, info|
-			if (noteToggles[type][num].isNil, { noteToggles[type][num] = false });
-			noteToggles[type][num] = noteToggles[type][num].not;
-			func.value(noteToggles[type][num], num, info);
-		}, type, note);
-	}
-
 	onControl { |func, type, num|
 		ccListeners = ccListeners.add([func, type, num]);
 	}
@@ -359,7 +381,8 @@ Circuit {
 		midiOut.program(midiChans[type], if (type == \synth2, { 32+(num%32) }, { (num%32) }));
 	}
 
-	noteOn { |type, note = 60, vel = 64|
+	noteOn { |type, note = 60, vel = 64, callListeners = true|
+		var chan;
 		if (type == \drum12 or: { type == \drum34 }, { type = \drums; });
 		if (midiChans[type].isNil, {
 			("Circuit.noteOn: unknown type " ++ type).throw;
@@ -367,10 +390,16 @@ Circuit {
 		if (midiOut.isNil, {
 			("Circuit.noteOn: midiOut not connected").throw;
 		});
-		midiOut.noteOn(midiChans[type], note, if (normalize, { vel * 127 }, { vel }));
+		chan = midiChans[type];
+		vel = if (normalize, { vel * 127 }, { vel });
+		midiOut.noteOn(chan, note, vel);
+		if (callListeners) {
+			this.prOnNoteOn(vel, note, chan);
+		};
 	}
 
-	noteOff { |type, note = 60, vel = 64|
+	noteOff { |type, note = 60, vel = 64, callListeners = true|
+		var chan;
 		if (type == \drum12 or: { type == \drum34 }, { type = \drums; });
 		if (midiChans[type].isNil, {
 			("Circuit.noteOff: unknown type " ++ type).throw;
@@ -378,6 +407,35 @@ Circuit {
 		if (midiOut.isNil, {
 			("Circuit.noteOff: midiOut not connected").throw;
 		});
-		midiOut.noteOff(midiChans[type], note, if (normalize, { vel * 127 }, { vel }));
+		chan = midiChans[type];
+		vel = if (normalize, { vel * 127 }, { vel });
+		midiOut.noteOff(chan, note, vel);
+		if (callListeners) {
+			this.prOnNoteOff(vel, note, chan);
+		};
+	}
+
+	toggleMode { |type, enable = true|
+		if (midiChans[type].isNil, {
+			("Circuit.toggleMode: unknown type " ++ type).throw;
+		});
+		if (type == \drums, {
+			("Circuit.toggleMode: cannot do toggleMode for drums").throw;
+		});
+		if (midiOut.isNil, {
+			("Circuit.toggleMode: midiOut not connected").throw;
+		});
+		if (enable) {
+			if (toggleModeNotes[type].isNil, {
+				toggleModeNotes[type] = Dictionary.new;
+			});
+		} {
+			if (toggleModeNotes[type].notNil, {
+				toggleModeNotes[type].keys.do { |note|
+					this.noteOff(type, note, 0);
+				};
+				toggleModeNotes.removeAt(type);
+			});
+		};
 	}
 }

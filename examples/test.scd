@@ -2,6 +2,7 @@
 // 1. connect
 ~circuit = Circuit.new.connect("Circuit");
 // ~circuit = Circuit.new.connect("M-Track");
+// ~circuit.checkSrc = false;
 )
 
 (
@@ -41,8 +42,11 @@
 	("synth1 note off: " + note + " " + value).postln;
 }, \synth1);
 
-~circuit.onNoteToggle({ |value, note|
-	("synth2 note toggle: " + note + " " + value).postln;
+~circuit.onNoteOn({ |value, note|
+	("synth2 note on: " + note + " " + value).postln;
+}, \synth2);
+~circuit.onNoteOff({ |value, note|
+	("synth2 note off: " + note + " " + value).postln;
 }, \synth2);
 
 ~circuit.onNoteOn({ |value, note|
@@ -82,13 +86,19 @@
 // choose second patch for synth1
 ~circuit.program(\synth1, 1);
 
+// play a note for 1 second
 ~circuit.noteOn(\synth1, 60, 127);
-~circuit.noteOff(\synth1, 60, 127);
+{
+	1.wait;
+	~circuit.noteOff(\synth1, 60, 127);
+}.fork;
 
-~circuit.noteOn(\synth2, 60, 127);
+// emulate toggleMode on synth2
+~circuit.toggleMode(\synth2);
 )
 
-~circuit.noteOff(\synth2, 60, 127);
+// turn toggleMode off
+~circuit.toggleMode(\synth2, false);
 
 (
 // optionally normalize input/output
