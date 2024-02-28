@@ -13,6 +13,7 @@ The library can be used to:
 - receive values of 51 knobs
 - set values of 51 knobs
 - receive note on/off events
+- receive program change events for synth1 and 2
 
 The knobs are segregated by section:
 
