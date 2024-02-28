@@ -12,8 +12,8 @@ The library can be used to:
 
 - receive knob values
 - set knob values
-- receive noteOn values
-- receive noteOn values
+- receive noteOn events
+- receive noteOf events
 
 The functions are segregated by section:
 
