@@ -341,8 +341,21 @@ Circuit {
 
 	setKnob { |type, index, value|
 		if (config[type].isNil, {
-			("Circuit.knob: unknown type " ++ type).throw;
+			("Circuit.setKnob: unknown type " ++ type).throw;
 		});
 		this.control(config[type][0][index], config[type][1][index], value * if (normalize, 127.0, 1.0));
+	}
+
+	setProgram { |type, num|
+		if (midiChans[type].isNil, {
+			("Circuit.setProgram: unknown type " ++ type).throw;
+		});
+		if (type == \drums, {
+			("Circuit.setProgram: cannot do program change for drums").throw;
+		});
+		if (midiOut.isNil, {
+			("Circuit.control: midiOut not connected").throw;
+		});
+		midiOut.program(chan, num % 32);
 	}
 }
