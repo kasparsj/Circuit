@@ -146,7 +146,7 @@ Circuit {
 	connect { |deviceName, portName|
 		this.connectIn(deviceName, portName);
 		this.connectOut(deviceName, portName);
-		this.midiFunc;
+		this.initMidiFns;
 	}
 
 	connectIn { |deviceName, portName|
@@ -171,7 +171,7 @@ Circuit {
 		};
 	}
 
-	midiFunc {
+	initMidiFns {
 		noteOnFn = MIDIFunc.noteOn({ |vel, num, chan, src|
 			var midi = (midiIn ? midiOut);
 			if (midi.notNil and: {src == midi.uid}) {
@@ -304,17 +304,17 @@ Circuit {
 		};
 	}
 
-	noteOn { |func, type, note|
+	onNoteOn { |func, type, note|
 		noteOnListeners = noteOnListeners.add([func, type, note]);
 	}
 
-	noteOff { |func, type, note|
+	onNoteOff { |func, type, note|
 		noteOffListeners = noteOffListeners.add([func, type, note]);
 	}
 
-	noteToggle { |func, type, note|
+	onNoteToggle { |func, type, note|
 		if (type.isNil, {
-			("Circuit.noteToggle: type is required").throw;
+			("Circuit.onNoteToggle: type is required").throw;
 		});
 		if (noteToggles[type].isNil, { noteToggles[type] = Dictionary.new; });
 		this.noteOff({ |value, num, info|
@@ -324,11 +324,11 @@ Circuit {
 		}, type, note);
 	}
 
-	cc { |func, type, num|
+	onControl { |func, type, num|
 		ccListeners = ccListeners.add([func, type, num]);
 	}
 
-	program { |func, type|
+	onProgram { |func, type|
 		programListeners = programListeners.add([func, type, nil]);
 	}
 
@@ -339,23 +339,45 @@ Circuit {
 		midiOut.control(chan, num, value);
 	}
 
-	setKnob { |type, index, value|
+	knob { |type, index, value|
 		if (config[type].isNil, {
-			("Circuit.setKnob: unknown type " ++ type).throw;
+			("Circuit.knob: unknown type " ++ type).throw;
 		});
 		this.control(config[type][0][index], config[type][1][index], value * if (normalize, 127.0, 1.0));
 	}
 
-	setProgram { |type, num|
+	program { |type, num|
 		if (midiChans[type].isNil, {
-			("Circuit.setProgram: unknown type " ++ type).throw;
+			("Circuit.program: unknown type " ++ type).throw;
 		});
 		if (type == \drums, {
-			("Circuit.setProgram: cannot do program change for drums").throw;
+			("Circuit.program: cannot do program change for drums").throw;
 		});
 		if (midiOut.isNil, {
-			("Circuit.control: midiOut not connected").throw;
+			("Circuit.program: midiOut not connected").throw;
 		});
-		midiOut.program(midiChans[type], num % 32);
+		midiOut.program(midiChans[type], if (type == \synth2, { 32+(num%32) }, { (num%32) }));
+	}
+
+	noteOn { |type, note = 60, vel = 64|
+		if (type == \drum12 or: { type == \drum34 }, { type = \drums; });
+		if (midiChans[type].isNil, {
+			("Circuit.noteOn: unknown type " ++ type).throw;
+		});
+		if (midiOut.isNil, {
+			("Circuit.noteOn: midiOut not connected").throw;
+		});
+		midiOut.noteOn(midiChans[type], note, if (normalize, { vel * 127 }, { vel }));
+	}
+
+	noteOff { |type, note = 60, vel = 64|
+		if (type == \drum12 or: { type == \drum34 }, { type = \drums; });
+		if (midiChans[type].isNil, {
+			("Circuit.noteOff: unknown type " ++ type).throw;
+		});
+		if (midiOut.isNil, {
+			("Circuit.noteOff: midiOut not connected").throw;
+		});
+		midiOut.noteOff(midiChans[type], note, if (normalize, { vel * 127 }, { vel }));
 	}
 }

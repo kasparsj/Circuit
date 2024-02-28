@@ -6,69 +6,69 @@
 
 (
 // 2. receive knob values from Circuit
-~circuit.cc({ |value, i|
+~circuit.onControl({ |value, i|
 	("synth1 knob " + i + ": " + value).postln;
 }, \synth1);
-~circuit.cc({ |value, i|
+~circuit.onControl({ |value, i|
 	("synth2 knob " + i + ": " + value).postln;
 }, \synth2);
-~circuit.cc({ |value, i|
+~circuit.onControl({ |value, i|
 	("drum12 knob " + i + ": " + value).postln;
 }, \drum12);
-~circuit.cc({ |value, i|
+~circuit.onControl({ |value, i|
 	("drum34 knob " + i + ": " + value).postln;
 }, \drum34);
-~circuit.cc({ |value, i|
+~circuit.onControl({ |value, i|
 	("filter knob: " + value).postln;
 }, \filter);
-~circuit.cc({ |value, i|
+~circuit.onControl({ |value, i|
 	("mixer knob " + i + ": " + value).postln;
 }, \mixer);
-~circuit.cc({ |value, i|
+~circuit.onControl({ |value, i|
 	("fx1 knob " + i + ": " + value).postln;
 }, \fx1);
-~circuit.cc({ |value, i|
+~circuit.onControl({ |value, i|
 	("fx2 knob " + i + ": " + value).postln;
 }, \fx2);
 )
 
 (
 // 3. receive note on/off/toggle from Circuit
-~circuit.noteOn({ |value, note|
+~circuit.onNoteOn({ |value, note|
 	("synth1 note on: " + note + " " + value).postln;
 }, \synth1);
-~circuit.noteOff({ |value, note|
+~circuit.onNoteOff({ |value, note|
 	("synth1 note off: " + note + " " + value).postln;
 }, \synth1);
 
-~circuit.noteToggle({ |value, note|
+~circuit.onNoteToggle({ |value, note|
 	("synth2 note toggle: " + note + " " + value).postln;
 }, \synth2);
 
-~circuit.noteOn({ |value, note|
+~circuit.onNoteOn({ |value, note|
 	("drum12 note on: " + note + " " + value).postln;
 }, \drum12);
-~circuit.noteOff({ |value, note|
+~circuit.onNoteOff({ |value, note|
 	("drum12 note off: " + note + " " + value).postln;
 }, \drum12);
 
-~circuit.noteOn({ |value, note|
+~circuit.onNoteOn({ |value, note|
 	("drum34 note on: " + note + " " + value).postln;
 }, \drum34);
-~circuit.noteOff({ |value, note|
+~circuit.onNoteOff({ |value, note|
 	("drum34 note off: " + note + " " + value).postln;
 }, \drum34);
 )
 
 (
 // 4. receive program changes from Circuit
-~circuit.program({ |value|
+~circuit.onProgram({ |value|
 	("synth1 program change: " + value).postln;
 }, \synth1);
-~circuit.program({ |value|
+~circuit.onProgram({ |value|
 	("synth2 program change: " + value).postln;
 }, \synth2);
-~circuit.program({ |value|
+~circuit.onProgram({ |value|
 	("sessions program change: " + value).postln;
 }, \sessions);
 )
@@ -77,20 +77,27 @@
 // 5. send MIDI to Circuit
 
 // set first knob to full on
-~circuit.setKnob(\synth1, 0, 127);
+~circuit.knob(\synth1, 0, 127);
 
 // choose second patch for synth1
-~circuit.setProgram(\synth1, 1);
+~circuit.program(\synth1, 1);
+
+~circuit.noteOn(\synth1, 60, 127);
+~circuit.noteOff(\synth1, 60, 127);
+
+~circuit.noteOn(\synth2, 60, 127);
 )
+
+~circuit.noteOff(\synth2, 60, 127);
 
 (
 // optionally normalize input/output
 ~circuit.normalize = true;
-~circuit.cc({ |value, i|
+~circuit.onControl({ |value, i|
 	// now value is between 0.0 and 1.0
 	("synth1 knob " + i + ": " + value).postln;
 }, \synth1);
-~circuit.setKnob(\synth1, 0, 1); // same as above
+~circuit.knob(\synth1, 0, 1); // same as above
 )
 
 (
