@@ -10,9 +10,9 @@ SuperCollider quark for using Novation Circuit as a MIDI controller
 
 The library can be used to:
 
-- receive values of 51 knobs (8 sections)
-- set values of 51 knobs (8 sections)
-- receive note on/off events (4 sections)
+- receive values of 51 knobs
+- set values of 51 knobs
+- receive note on/off events
 
 The knobs are segregated by section:
 
@@ -25,7 +25,7 @@ The knobs are segregated by section:
 - fx2 (6 knobs)
 - filter (1 knob)
 
-Note on/off events can be received from these sections:
+Note on/off events can be received for these sections:
 
 - synth1
 - synth2
