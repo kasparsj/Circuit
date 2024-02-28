@@ -2,6 +2,7 @@ Circuit {
 	classvar <numInstances = 0;
 	classvar <defaultChans;
 	classvar <midiChans;
+	classvar <midiCCs;
 	classvar <config;
 
 	var <>server;
@@ -36,14 +37,22 @@ Circuit {
 		config = (
 			\synth1: [Array.fill(8, chans[\synth1]), (80..87)],
 			\synth2: [Array.fill(8, chans[\synth2]), (80..87)],
-			\drum12: [Array.fill(8, chans[\drums]), (14, 34, 15, 40, 16, 42, 17, 43)],
-			\drum34: [Array.fill(8, chans[\drums]), (46, 55, 47, 57, 48, 61, 49, 76)],
+			\drum12: [Array.fill(8, chans[\drums]), [14, 34, 15, 40, 16, 42, 17, 43]],
+			\drum34: [Array.fill(8, chans[\drums]), [46, 55, 47, 57, 48, 61, 49, 76]],
 			\mixer: [[chans[\fx], chans[\fx], chans[\drums], chans[\drums], chans[\drums], chans[\drums]], [12, 14, 12, 23, 45, 53]],
 			\fx1: [Array.fill(6, chans[\fx]), (111..116)], // REVERB (first row)
 			\fx2: [Array.fill(6, chans[\fx]), [88, 89, 90, 106, 109, 110]], // DELAY (second row)
 			\filter: [[chans[\fx]], [74]],
 		);
 		midiChans = chans;
+		midiCCs = Dictionary.new;
+		config.keysValuesDo { |type, conf|
+			conf[0].do { |chan, i|
+				var cc = conf[1][i];
+				if (midiCCs[chan].isNil, { midiCCs[chan] = Dictionary.new });
+				midiCCs[chan][cc] = [type, i];
+			};
+		};
 	}
 
 	*new { |s=nil|
@@ -146,90 +155,13 @@ Circuit {
 	}
 
 	prCCInfo { |num, chan|
-		var info;
-		switch (chan,
-			{midiChans[\synth1]}, {
-				if (num >= config[\synth1][1].first and: { num <= config[\synth1][1].last }) {
-					info = [\synth1, num-config[\synth1][1].first];
+		^block {|break|
+			midiCCs[chan].keysValuesDo { |cc, info|
+				if (num == cc) {
+					break.value(info);
 				};
-			},
-
-			{midiChans[\synth2]}, {
-				if (num >= config[\synth2][1].first and: { num <= config[\synth2][1].last }) {
-					info = [\synth2, num-config[\synth2][1].first];
-				};
-			},
-
-			{midiChans[\drums]}, {
-				if (num == 12, {
-					info = [\mixer, 2];
-				});
-				if (num >= 14 and: { num <= 17 }, {
-					info = [\drum12, (num-14)*2];
-				});
-				if (num == 23, {
-					info = [\mixer, 3];
-				});
-				if (num == 34, {
-					info = [\drum12, 1];
-				});
-				if (num == 40, {
-					info = [\drum12, 3];
-				});
-				if (num == 42, {
-					info = [\drum12, 5];
-				});
-				if (num == 43, {
-					info = [\drum12, 7];
-				});
-				if (num == 45, {
-					info = [\mixer, 4];
-				});
-				if (num >= 46 and: { num <= 49 }, {
-					info = [\drum34, (num-46)*2];
-				});
-				if (num == 53, {
-					info = [\mixer, 5];
-				});
-				if (num == 55, {
-					info = [\drum34, 1];
-				});
-				if (num == 57, {
-					info = [\drum34, 3];
-				});
-				if (num == 61, {
-					info = [\drum34, 5];
-				});
-				if (num == 76, {
-					info = [\drum34, 7];
-				});
-			},
-
-			{midiChans[\fx]}, {
-				if (num == 12, {
-					info = [\mixer, 0];
-				});
-				if (num == 14, {
-					info = [\mixer, 1];
-				});
-				if (num == 74, {
-					info = [\filter, 0];
-				});
-				if (num >= 88 and: { num <= 90 }, {
-					info = [\fx2, num-88];
-				});
-				if (num == 106, {
-					info = [\fx2, 3];
-				});
-				if (num >= 109 and: { num <= 110 }, {
-					info = [\fx2, num-109+4]
-				});
-				if (num >= 111 and: { num <= 116 }, {
-					info = [\fx1, num-111];
-				});
-			},
-		);
-		^info;
+			};
+		};
 	}
 
 	noteOn { |func, type|
