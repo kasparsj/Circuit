@@ -36,8 +36,8 @@ Circuit {
 		config = (
 			\synth1: [Array.fill(8, chans[\synth1]), (80..87)],
 			\synth2: [Array.fill(8, chans[\synth2]), (80..87)],
-			\drum12: [Array.fill(8, chans[\drums]), (14..21)],
-			\drum34: [Array.fill(8, chans[\drums]), (46..53)],
+			\drum12: [Array.fill(8, chans[\drums]), (14, 34, 15, 40, 16, 42, 17, 43)],
+			\drum34: [Array.fill(8, chans[\drums]), (46, 55, 47, 57, 48, 61, 49, 76)],
 			\mixer: [[chans[\fx], chans[\fx], chans[\drums], chans[\drums], chans[\drums], chans[\drums]], [12, 14, 12, 23, 45, 53]],
 			\fx1: [Array.fill(6, chans[\fx]), (111..116)], // REVERB (first row)
 			\fx2: [Array.fill(6, chans[\fx]), [88, 89, 90, 106, 109, 110]], // DELAY (second row)
