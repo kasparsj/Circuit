@@ -8,7 +8,7 @@ SuperCollider quark for using Novation Circuit as a MIDI controller
 
 ## Usage
 
-The library can be used to:
+The library can:
 
 - send/receive values of 51 knobs
 - send/receive note on/off events
