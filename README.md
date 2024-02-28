@@ -13,6 +13,7 @@ The library can:
 - send/receive values of 51 knobs
 - send/receive note on/off events
 - send/receive program change events
+- emulate toggle mode behaviour for synth1 and synth2
 
 The knobs are segregated by section:
 
