@@ -37,4 +37,16 @@
 ~circuit.noteOff({ |value, note|
 	("syn1 note off: " + note + " " + value).postln;
 }, \syn1);
+~circuit.noteOn({ |value, note|
+	("drum0 note on: " + note + " " + value).postln;
+}, \drum0);
+~circuit.noteOff({ |value, note|
+	("drum0 note off: " + note + " " + value).postln;
+}, \drum0);
+~circuit.noteOn({ |value, note|
+	("drum1 note on: " + note + " " + value).postln;
+}, \drum1);
+~circuit.noteOff({ |value, note|
+	("drum1 note off: " + note + " " + value).postln;
+}, \drum1);
 )

@@ -13,14 +13,14 @@ Circuit {
 
 	*initClass {
 		config = (
-			\syn0: [Array.fill(8, 0), (80..87)],
-			\syn1: [Array.fill(8, 1), (80..87)],
-			\drum0: [Array.fill(8, 9), (14..21)],
-			\drum1: [Array.fill(8, 9), (46..53)],
-			\mix: [[15, 15, 9, 9, 9, 9], [12, 14, 12, 23, 45, 53]],
-			\fx0: [Array.fill(6, 15), (111..116)],
-			\fx1: [Array.fill(6, 15), [88, 89, 90, 106, 109, 110]],
-			\fltr: [[15], [74]],
+			\syn0: [Array.fill(8, 0), (80..87)], // SYNTH 1
+			\syn1: [Array.fill(8, 1), (80..87)], // SYNTH 2
+			\drum0: [Array.fill(8, 9), (14..21)], // DRUM 1-2
+			\drum1: [Array.fill(8, 9), (46..53)], // DRUM 3-4
+			\mix: [[15, 15, 9, 9, 9, 9], [12, 14, 12, 23, 45, 53]], // MIXER
+			\fx0: [Array.fill(6, 15), (111..116)], // REVERB (first row)
+			\fx1: [Array.fill(6, 15), [88, 89, 90, 106, 109, 110]], // DELAY (second row)
+			\fltr: [[15], [74]], // FILTER KNOB
 		);
 		types = config.keys;
 	}
@@ -116,6 +116,15 @@ Circuit {
 			1, {
 				[\syn1];
 			},
+			9, {
+				if (note == 60 or: {note == 62}) {
+					[\drum0];
+				} {
+					//if (note == 64 or: {note == 65}) {
+						[\drum1];
+					//};
+				};
+			}
 		);
 	}
 
@@ -211,9 +220,10 @@ Circuit {
 			var midi = (midiIn ? midiOut);
 			if (midi.notNil and: {src == midi.uid}) {
 				var noteInfo = this.prNoteInfo(num, chan);
-				if (noteInfo.notNil and: {type.isNil or: { type == noteInfo[0] }}) {
+				if (type.isNil or: { noteInfo.notNil and: {type == noteInfo[0]} }) {
 					var value = vel / 127.0;
-					func.value(value, num);
+					var typeInfo = if (noteInfo.notNil, noteInfo[0], chan);
+					func.value(value, num, typeInfo);
 				};
 			};
 		});
@@ -224,9 +234,10 @@ Circuit {
 			var midi = (midiIn ? midiOut);
 			if (midi.notNil and: {src == midi.uid}) {
 				var noteInfo = this.prNoteInfo(num, chan);
-				if (noteInfo.notNil and: {type.isNil or: { type == noteInfo[0] }}) {
+				if (type.isNil or: { noteInfo.notNil and: {type == noteInfo[0]} }) {
 					var value = vel / 127.0;
-					func.value(value, num);
+					var typeInfo = if (noteInfo.notNil, noteInfo[0], chan);
+					func.value(value, num, typeInfo);
 				};
 			};
 		});
@@ -237,9 +248,13 @@ Circuit {
 			var midi = (midiIn ? midiOut);
 			if (midi.notNil and: {src == midi.uid}) {
 				var ccInfo = this.prCCInfo(num, chan);
-				if ( ccInfo.notNil and: {type.isNil or: { type == ccInfo[0] }}) {
+				if (type.isNil or: { ccInfo.notNil and: {type == ccInfo[0]} }) {
 					value = value / 127.0;
-					func.value(value, ccInfo[1]);
+					if (ccInfo.notNil, {
+						func.value(value, ccInfo[1], ccInfo[0]);
+					}, {
+						func.value(value, num, chan);
+					});
 				};
 			};
 		});
