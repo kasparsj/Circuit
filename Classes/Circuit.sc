@@ -6,11 +6,10 @@ Circuit {
 	classvar <config;
 
 	var <>server;
+	var <>midiIn;
+	var <>midiOut;
 	var <buses;
 	var <out;
-
-	var <midiIn;
-	var <midiOut;
 
 	var <>checkSrc = true;
 	var <>normalize = false;
@@ -46,6 +45,28 @@ Circuit {
 		});
 	}
 
+	*findMIDIIn { |deviceName="Circuit", portName=nil|
+		^block { |break|
+			MIDIClient.sources.do { |endpoint, i|
+				// todo: allow partial match
+				if (endpoint.device == deviceName and: { portName.isNil or: { portName == endpoint.name } }) {
+					break.value(MIDIClient.sources.at(i));
+				};
+			};
+		};
+	}
+
+	*findMIDIOut { |deviceName="Circuit", portName=nil|
+		^block { |break|
+			MIDIClient.destinations.do {|endpoint, i|
+				// todo: allow partial match
+				if (endpoint.device == deviceName and: { portName.isNil or: { portName == endpoint.name } }) {
+					break.value(MIDIOut.newByName(deviceName, endpoint.name));
+				};
+			};
+		};
+	}
+
 	*configure { |chans|
 		chans = defaultChans ++ (chans ? ());
 		config = (
@@ -69,10 +90,11 @@ Circuit {
 		};
 	}
 
-	*new { |s=nil|
-		var instance = super.newCopyArgs(s ? Server.default);
+	*new { |deviceName="Circuit", portName=nil, s=nil|
+		var instance;
+		instance = super.newCopyArgs(s ? Server.default, this.findMIDIIn(deviceName, portName), this.findMIDIOut(deviceName, portName));
 		numInstances = numInstances + 1;
-		instance.init(s ? Server.default);
+		instance.init;
 		^instance;
 	}
 
@@ -95,7 +117,9 @@ Circuit {
 		if (Circuit.numInstances == 1, {
 			this.makeDefault();
 		});
-		CmdPeriod.add { this.deinit(); }
+		CmdPeriod.add { this.deinit(); };
+
+		this.initMidiFns;
 	}
 
 	deinit {
@@ -142,34 +166,6 @@ Circuit {
 		    Event.addParentType(\circuit, (circuit: this));
 		};
 		// todo: do we need to throw an error?
-	}
-
-	connect { |deviceName, portName|
-		this.connectIn(deviceName, portName);
-		this.connectOut(deviceName, portName);
-		this.initMidiFns;
-	}
-
-	connectIn { |deviceName, portName|
-		MIDIClient.sources.do { |endpoint, i|
-			// todo: allow partial match
-			if (endpoint.device == deviceName and: { portName.isNil or: { portName == endpoint.name } }) {
-				try {
-					midiIn = MIDIIn.connect(i, MIDIClient.sources.at(i));
-				} { |err|
-					err.postln;
-				};
-			};
-		};
-	}
-
-	connectOut { |deviceName, portName|
-		MIDIClient.destinations.do {|endpoint, i|
-			// todo: allow partial match
-			if (endpoint.device == deviceName and: { portName.isNil or: { portName == endpoint.name } }) {
-				midiOut = MIDIOut.newByName(deviceName, endpoint.name);
-			};
-		};
 	}
 
 	initMidiFns {
