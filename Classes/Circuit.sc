@@ -174,26 +174,27 @@ Circuit {
 
 	initMidiFns {
 		noteOnFn = MIDIFunc.noteOn({ |vel, num, chan, src|
+			// todo: can't use midiOut here because it does not have uid property
 			var midi = (midiIn ? midiOut);
-			if (checkSrc and: {midi.notNil and: {src == midi.uid}}) {
+			if (checkSrc.not or: {midi.notNil and: {src == midi.uid}}) {
 				this.prOnNoteOn(vel, num, chan);
 			};
 		});
 		noteOffFn = MIDIFunc.noteOff({ |vel, num, chan, src|
 			var midi = (midiIn ? midiOut);
-			if (checkSrc and: {midi.notNil and: {src == midi.uid}}) {
+			if (checkSrc.not or: {midi.notNil and: {src == midi.uid}}) {
 				this.prOnNoteOff(vel, num, chan);
 			};
 		});
 		ccFn = MIDIFunc.cc({ |value, num, chan, src|
 			var midi = (midiIn ? midiOut);
-			if (checkSrc and: {midi.notNil and: {src == midi.uid}}) {
+			if (checkSrc.not or: {midi.notNil and: {src == midi.uid}}) {
 				this.prOnControl(value, num, chan);
 			};
 		});
 		programFn = MIDIFunc.program({ |value, chan, src|
 			var midi = (midiIn ? midiOut);
-			if (checkSrc and: {midi.notNil and: {src == midi.uid}}) {
+			if (checkSrc.not or: {midi.notNil and: {src == midi.uid}}) {
 				this.prOnProgram(value, chan);
 			};
 		});
